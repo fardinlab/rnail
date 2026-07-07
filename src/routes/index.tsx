@@ -88,41 +88,6 @@ function LoginPage() {
           </div>
         </div>
 
-        <Button
-          onClick={handleMsal}
-          disabled={!msalReady || msalLoading}
-          className="w-full h-11 mb-4"
-          size="lg"
-        >
-          {msalLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <svg viewBox="0 0 23 23" className="h-4 w-4 mr-2" aria-hidden>
-                <path fill="#f25022" d="M1 1h10v10H1z" />
-                <path fill="#7fba00" d="M12 1h10v10H12z" />
-                <path fill="#00a4ef" d="M1 12h10v10H1z" />
-                <path fill="#ffb900" d="M12 12h10v10H12z" />
-              </svg>
-              Sign in with Microsoft
-            </>
-          )}
-        </Button>
-        {!msalReady && (
-          <p className="text-xs text-muted-foreground mb-4">
-            Set <code className="font-mono">VITE_CLIENT_ID</code> (and optional{" "}
-            <code className="font-mono">VITE_TENANT_ID</code>) to enable Microsoft sign-in.
-          </p>
-        )}
-
-        <div className="relative my-2">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
 
         <label className="text-sm font-medium mb-2 mt-4 block" htmlFor="creds">
           Credentials
