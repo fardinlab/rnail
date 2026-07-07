@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
-  connect,
+  connectMany,
   enterGuestMode,
-  parseCredentialsLine,
+  parseCredentialsLines,
   signInMicrosoft,
 } from "@/lib/graph";
 import { isMsalConfigured } from "@/lib/msal";
@@ -27,9 +27,22 @@ function LoginPage() {
   const handleConnect = async () => {
     setLoading(true);
     try {
-      const creds = parseCredentialsLine(value);
-      await connect(creds);
-      toast.success("Connected", { description: creds.email });
+      const list = parseCredentialsLines(value);
+      const { successes, failures } = await connectMany(list);
+      if (successes.length === 0) {
+        toast.error("Connection failed", {
+          description: failures[0]?.error ?? "No account connected",
+        });
+        return;
+      }
+      toast.success(`Connected ${successes.length} account${successes.length > 1 ? "s" : ""}`, {
+        description: successes.join(", "),
+      });
+      if (failures.length > 0) {
+        toast.warning(`${failures.length} failed`, {
+          description: failures.map((f) => `${f.email}: ${f.error}`).join("\n"),
+        });
+      }
       navigate({ to: "/mailbox" });
     } catch (e) {
       toast.error("Connection failed", {
