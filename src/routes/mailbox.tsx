@@ -29,8 +29,10 @@ import {
   getMessage,
   getSessionSnapshot,
   listMessages,
+  removeAccount,
   signOut,
   subscribeSession,
+  switchAccount,
   type GraphMessage,
   type MailFolder,
 } from "@/lib/graph";
