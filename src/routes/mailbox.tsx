@@ -279,6 +279,21 @@ function MailboxPage() {
             />
           </form>
 
+          {session.email && (
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(session.email!);
+                toast.success("Email copied", { description: session.email! });
+              }}
+              title={`Click to copy ${session.email}`}
+              className="hidden sm:flex items-center gap-1.5 max-w-[220px] h-9 px-3 rounded-md border border-border bg-background hover:bg-muted text-xs font-medium transition-colors"
+            >
+              <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{session.email}</span>
+            </button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
