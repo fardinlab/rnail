@@ -1,3 +1,5 @@
+import { exchangeRefreshToken } from "./token.functions";
+
 // Microsoft Graph API client + in-memory credential store.
 // Credentials are NEVER persisted to localStorage or a database — only kept
 // in module-scope memory for the lifetime of the tab.
@@ -117,7 +119,6 @@ export function parseCredentialsLine(input: string): Credentials {
 }
 
 async function refreshAccessToken(creds: Credentials): Promise<string> {
-  const { exchangeRefreshToken } = await import("./token.functions");
   const data = await exchangeRefreshToken({
     data: {
       clientId: creds.clientId,

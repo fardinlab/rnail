@@ -16,7 +16,7 @@ export const exchangeRefreshToken = createServerFn({ method: "POST" })
       grant_type: "refresh_token",
       refresh_token: data.refreshToken,
       scope:
-        "offline_access openid profile Mail.Read Mail.ReadWrite Mail.Send User.Read",
+        "Mail.Read offline_access openid profile email",
     });
 
     const res = await fetch(
