@@ -46,6 +46,8 @@ interface Session {
   refreshToken: string | null;
   expiresAt: number;
   guest: boolean;
+  msal: boolean;
+  email: string | null;
 }
 
 const session: Session = {
@@ -54,6 +56,8 @@ const session: Session = {
   refreshToken: null,
   expiresAt: 0,
   guest: false,
+  msal: false,
+  email: null,
 };
 
 const listeners = new Set<() => void>();
@@ -65,7 +69,12 @@ export function subscribeSession(l: () => void) {
 }
 
 export function getSessionSnapshot() {
-  return { connected: !!session.accessToken || session.guest, guest: session.guest, email: session.creds?.email ?? null };
+  return {
+    connected: !!session.accessToken || session.guest || session.msal,
+    guest: session.guest,
+    msal: session.msal,
+    email: session.email,
+  };
 }
 
 export function signOut() {
@@ -74,12 +83,23 @@ export function signOut() {
   session.refreshToken = null;
   session.expiresAt = 0;
   session.guest = false;
+  session.msal = false;
+  session.email = null;
   emit();
 }
 
 export function enterGuestMode() {
   signOut();
   session.guest = true;
+  emit();
+}
+
+export async function signInMicrosoft() {
+  const { loginPopup } = await import("./msal");
+  const account = await loginPopup();
+  signOut();
+  session.msal = true;
+  session.email = account.username ?? null;
   emit();
 }
 
@@ -129,21 +149,27 @@ async function refreshAccessToken(creds: Credentials): Promise<string> {
 }
 
 export async function connect(creds: Credentials) {
+  signOut();
   session.creds = creds;
   session.refreshToken = creds.refreshToken;
-  session.guest = false;
+  session.email = creds.email;
   await refreshAccessToken(creds);
   emit();
 }
 
 async function ensureToken(): Promise<string> {
   if (session.guest) throw new Error("Guest mode: no live Microsoft Graph access.");
+  if (session.msal) {
+    const { acquireGraphToken } = await import("./msal");
+    return acquireGraphToken();
+  }
   if (!session.creds) throw new Error("Not connected.");
   if (!session.accessToken || Date.now() >= session.expiresAt) {
     await refreshAccessToken(session.creds);
   }
   return session.accessToken!;
 }
+
 
 async function graphFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await ensureToken();

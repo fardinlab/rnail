@@ -103,6 +103,15 @@ function MailboxPage() {
     void load();
   }, [load]);
 
+  // Auto-refresh every 10s
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void load();
+    }, 10_000);
+    return () => window.clearInterval(id);
+  }, [load]);
+
+
   useEffect(() => {
     if (!selectedId) {
       setSelected(null);
@@ -183,7 +192,9 @@ function MailboxPage() {
           variant="ghost"
           size="sm"
           className="w-full justify-start"
-          onClick={() => {
+          onClick={async () => {
+            const { msalSignOut } = await import("@/lib/msal");
+            await msalSignOut().catch(() => null);
             signOut();
             navigate({ to: "/" });
           }}
