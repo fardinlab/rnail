@@ -192,7 +192,9 @@ function MailboxPage() {
           variant="ghost"
           size="sm"
           className="w-full justify-start"
-          onClick={() => {
+          onClick={async () => {
+            const { msalSignOut } = await import("@/lib/msal");
+            await msalSignOut().catch(() => null);
             signOut();
             navigate({ to: "/" });
           }}
