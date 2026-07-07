@@ -172,6 +172,40 @@ function MailboxPage() {
           </div>
         </div>
       </div>
+      {session.accounts.length > 1 && (
+        <div className="mb-3 px-1">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 mb-1">
+            Accounts ({session.accounts.length})
+          </div>
+          <div className="flex flex-col gap-0.5 max-h-48 overflow-auto">
+            {session.accounts.map((email, i) => (
+              <div key={email + i} className="flex items-center gap-1 group">
+                <button
+                  onClick={() => {
+                    switchAccount(i);
+                    setSelectedId(null);
+                  }}
+                  className={`flex-1 truncate text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                    i === session.activeIndex
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "hover:bg-muted text-foreground/70"
+                  }`}
+                  title={email}
+                >
+                  {email}
+                </button>
+                <button
+                  onClick={() => removeAccount(i)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive text-xs px-1"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {FOLDERS.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
