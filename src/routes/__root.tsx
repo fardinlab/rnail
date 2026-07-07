@@ -81,9 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Mailbox — Outlook-style Web Client" },
       { name: "description", content: "Modern Outlook-style mailbox client with OTP detection, powered by Microsoft Graph." },
       { property: "og:title", content: "Mailbox — Outlook-style Web Client" },
-      { property: "og:description", content: "Modern Outlook-style mailbox client with OTP detection." },
+      { property: "og:description", content: "Modern Outlook-style mailbox client with OTP detection, powered by Microsoft Graph." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Mailbox — Outlook-style Web Client" },
+      { name: "twitter:description", content: "Modern Outlook-style mailbox client with OTP detection, powered by Microsoft Graph." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4fa19b89-463b-40fe-b5fe-4bd0eba81321/id-preview-2123022d--287a2eea-9bc6-4ce1-9594-192769063e1d.lovable.app-1783422228658.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4fa19b89-463b-40fe-b5fe-4bd0eba81321/id-preview-2123022d--287a2eea-9bc6-4ce1-9594-192769063e1d.lovable.app-1783422228658.png" },
     ],
     links: [
       {
