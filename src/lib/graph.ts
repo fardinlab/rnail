@@ -117,36 +117,19 @@ export function parseCredentialsLine(input: string): Credentials {
 }
 
 async function refreshAccessToken(creds: Credentials): Promise<string> {
-  const body = new URLSearchParams({
-    client_id: creds.clientId,
-    grant_type: "refresh_token",
-    refresh_token: session.refreshToken || creds.refreshToken,
-    scope:
-      "offline_access openid profile Mail.Read Mail.ReadWrite Mail.Send User.Read",
-  });
-
-  const res = await fetch(
-    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
+  const { exchangeRefreshToken } = await import("./token.functions");
+  const data = await exchangeRefreshToken({
+    data: {
+      clientId: creds.clientId,
+      refreshToken: session.refreshToken || creds.refreshToken,
     },
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Token refresh failed: ${res.status} ${err}`);
-  }
-  const data = (await res.json()) as {
-    access_token: string;
-    refresh_token?: string;
-    expires_in: number;
-  };
+  });
   session.accessToken = data.access_token;
   if (data.refresh_token) session.refreshToken = data.refresh_token;
   session.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
   return data.access_token;
 }
+
 
 export async function connect(creds: Credentials) {
   signOut();
