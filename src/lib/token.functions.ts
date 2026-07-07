@@ -11,8 +11,14 @@ export const exchangeRefreshToken = createServerFn({ method: "POST" })
   .inputValidator((data) => InputSchema.parse(data))
   .handler(async ({ data }) => {
     const tenant = data.tenantId || "common";
+    const tenant = data.tenantId || "common";
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
-    const attempts: Array<string | undefined> = [undefined, "Mail.Read"];
+    const attempts: Array<string | undefined> = [
+      "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite offline_access",
+      "https://graph.microsoft.com/.default offline_access",
+      "https://graph.microsoft.com/Mail.Read",
+      undefined,
+    ];
 
     let lastErrorText = "";
     for (const scope of attempts) {
