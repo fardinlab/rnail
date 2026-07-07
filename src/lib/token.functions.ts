@@ -11,30 +11,39 @@ export const exchangeRefreshToken = createServerFn({ method: "POST" })
   .inputValidator((data) => InputSchema.parse(data))
   .handler(async ({ data }) => {
     const tenant = data.tenantId || "common";
-    const body = new URLSearchParams({
-      client_id: data.clientId,
-      grant_type: "refresh_token",
-      refresh_token: data.refreshToken,
-      scope:
-        "Mail.Read offline_access openid profile email",
-    });
+    const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+    const attempts: Array<string | undefined> = [undefined, "Mail.Read"];
 
-    const res = await fetch(
-      `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-      {
+    let lastErrorText = "";
+    for (const scope of attempts) {
+      const body = new URLSearchParams({
+        client_id: data.clientId,
+        grant_type: "refresh_token",
+        refresh_token: data.refreshToken,
+      });
+      if (scope) body.set("scope", scope);
+
+      const res = await fetch(tokenUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
-      },
-    );
+      });
 
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(`Token refresh failed: ${res.status} ${text}`);
+      const text = await res.text();
+      if (res.ok) {
+        return JSON.parse(text) as {
+          access_token: string;
+          refresh_token?: string;
+          expires_in: number;
+        };
+      }
+      lastErrorText = `${res.status} ${text}`;
     }
-    return JSON.parse(text) as {
-      access_token: string;
-      refresh_token?: string;
-      expires_in: number;
-    };
+
+    if (lastErrorText.includes("AADSTS70000")) {
+      throw new Error(
+        "This refresh token is expired or was not granted Mail.Read for this client. Sign in with Microsoft once to grant access, then use the new session.",
+      );
+    }
+    throw new Error(`Token refresh failed: ${lastErrorText}`);
   });

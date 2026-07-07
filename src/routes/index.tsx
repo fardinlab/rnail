@@ -118,13 +118,14 @@ function LoginPage() {
           id="creds"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="email|password|refresh_token|client_id"
+          placeholder="email|password|refresh_token|client_id|tenant_id (optional)"
           className="min-h-32 font-mono text-sm resize-y"
           spellCheck={false}
           autoComplete="off"
         />
         <p className="mt-2 text-xs text-muted-foreground">
-          Format: <code className="font-mono">email|password|refresh_token|client_id</code>.
+          Format: <code className="font-mono">email|password|refresh_token|client_id</code> or add
+          optional <code className="font-mono">|tenant_id</code>.
           Credentials stay in memory only — never saved to storage.
         </p>
 

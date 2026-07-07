@@ -28,6 +28,7 @@ export interface Credentials {
   password: string;
   refreshToken: string;
   clientId: string;
+  tenantId?: string;
 }
 
 export interface GraphMessage {
@@ -111,11 +112,11 @@ export function parseCredentialsLine(input: string): Credentials {
   if (parts.length < 4) {
     throw new Error("Expected format: email|password|refresh_token|client_id");
   }
-  const [email, password, refreshToken, clientId] = parts;
+  const [email, password, refreshToken, clientId, tenantId] = parts;
   if (!email || !password || !refreshToken || !clientId) {
     throw new Error("All 4 fields are required.");
   }
-  return { email, password, refreshToken, clientId };
+  return { email, password, refreshToken, clientId, tenantId: tenantId || undefined };
 }
 
 async function refreshAccessToken(creds: Credentials): Promise<string> {
@@ -123,6 +124,7 @@ async function refreshAccessToken(creds: Credentials): Promise<string> {
     data: {
       clientId: creds.clientId,
       refreshToken: session.refreshToken || creds.refreshToken,
+      tenantId: creds.tenantId || import.meta.env.VITE_TENANT_ID || undefined,
     },
   });
   session.accessToken = data.access_token;
