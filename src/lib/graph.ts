@@ -218,11 +218,12 @@ async function ensureToken(): Promise<string> {
     const { acquireGraphToken } = await import("./msal");
     return acquireGraphToken();
   }
-  if (!session.creds) throw new Error("Not connected.");
-  if (!session.accessToken || Date.now() >= session.expiresAt) {
-    await refreshAccessToken(session.creds);
+  const account = activeAccount();
+  if (!account) throw new Error("Not connected.");
+  if (!account.accessToken || Date.now() >= account.expiresAt) {
+    await refreshAccessToken(account);
   }
-  return session.accessToken!;
+  return account.accessToken!;
 }
 
 
