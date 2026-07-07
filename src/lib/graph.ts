@@ -43,24 +43,27 @@ export interface GraphMessage {
   flag?: { flagStatus: "notFlagged" | "flagged" | "complete" };
 }
 
-interface Session {
-  creds: Credentials | null;
+interface Account {
+  creds: Credentials;
   accessToken: string | null;
-  refreshToken: string | null;
+  refreshToken: string;
   expiresAt: number;
+}
+
+interface Session {
+  accounts: Account[];
+  activeIndex: number;
   guest: boolean;
   msal: boolean;
-  email: string | null;
+  msalEmail: string | null;
 }
 
 const session: Session = {
-  creds: null,
-  accessToken: null,
-  refreshToken: null,
-  expiresAt: 0,
+  accounts: [],
+  activeIndex: -1,
   guest: false,
   msal: false,
-  email: null,
+  msalEmail: null,
 };
 
 const listeners = new Set<() => void>();
@@ -71,23 +74,45 @@ export function subscribeSession(l: () => void) {
   return () => listeners.delete(l);
 }
 
+function activeAccount(): Account | null {
+  return session.accounts[session.activeIndex] ?? null;
+}
+
 export function getSessionSnapshot() {
+  const active = activeAccount();
   return {
-    connected: !!session.accessToken || session.guest || session.msal,
+    connected: !!active || session.guest || session.msal,
     guest: session.guest,
     msal: session.msal,
-    email: session.email,
+    email: session.msal ? session.msalEmail : active?.creds.email ?? null,
+    accounts: session.accounts.map((a) => a.creds.email),
+    activeIndex: session.activeIndex,
   };
 }
 
 export function signOut() {
-  session.creds = null;
-  session.accessToken = null;
-  session.refreshToken = null;
-  session.expiresAt = 0;
+  session.accounts = [];
+  session.activeIndex = -1;
   session.guest = false;
   session.msal = false;
-  session.email = null;
+  session.msalEmail = null;
+  emit();
+}
+
+export function switchAccount(index: number) {
+  if (index >= 0 && index < session.accounts.length) {
+    session.activeIndex = index;
+    emit();
+  }
+}
+
+export function removeAccount(index: number) {
+  session.accounts.splice(index, 1);
+  if (session.accounts.length === 0) {
+    session.activeIndex = -1;
+  } else if (session.activeIndex >= session.accounts.length) {
+    session.activeIndex = session.accounts.length - 1;
+  }
   emit();
 }
 
@@ -102,12 +127,11 @@ export async function signInMicrosoft() {
   const account = await loginPopup();
   signOut();
   session.msal = true;
-  session.email = account.username ?? null;
+  session.msalEmail = account.username ?? null;
   emit();
 }
 
-export function parseCredentialsLine(input: string): Credentials {
-  const line = input.trim().split(/\r?\n/)[0]?.trim() ?? "";
+function parseOneLine(line: string): Credentials {
   const parts = line.split("|").map((p) => p.trim());
   if (parts.length < 4) {
     throw new Error("Expected format: email|password|refresh_token|client_id");
@@ -119,28 +143,73 @@ export function parseCredentialsLine(input: string): Credentials {
   return { email, password, refreshToken, clientId, tenantId: tenantId || undefined };
 }
 
-async function refreshAccessToken(creds: Credentials): Promise<string> {
+export function parseCredentialsLine(input: string): Credentials {
+  const line = input.trim().split(/\r?\n/)[0]?.trim() ?? "";
+  return parseOneLine(line);
+}
+
+export function parseCredentialsLines(input: string): Credentials[] {
+  const lines = input
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && l.includes("|"));
+  if (lines.length === 0) throw new Error("Paste at least one credentials line.");
+  return lines.map(parseOneLine);
+}
+
+async function refreshAccessToken(account: Account): Promise<string> {
   const data = await exchangeRefreshToken({
     data: {
-      clientId: creds.clientId,
-      refreshToken: session.refreshToken || creds.refreshToken,
-      tenantId: creds.tenantId || import.meta.env.VITE_TENANT_ID || undefined,
+      clientId: account.creds.clientId,
+      refreshToken: account.refreshToken,
+      tenantId: account.creds.tenantId || import.meta.env.VITE_TENANT_ID || undefined,
     },
   });
-  session.accessToken = data.access_token;
-  if (data.refresh_token) session.refreshToken = data.refresh_token;
-  session.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  account.accessToken = data.access_token;
+  if (data.refresh_token) account.refreshToken = data.refresh_token;
+  account.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
   return data.access_token;
 }
 
-
 export async function connect(creds: Credentials) {
   signOut();
-  session.creds = creds;
-  session.refreshToken = creds.refreshToken;
-  session.email = creds.email;
-  await refreshAccessToken(creds);
+  const account: Account = {
+    creds,
+    accessToken: null,
+    refreshToken: creds.refreshToken,
+    expiresAt: 0,
+  };
+  await refreshAccessToken(account);
+  session.accounts = [account];
+  session.activeIndex = 0;
   emit();
+}
+
+export async function connectMany(list: Credentials[]): Promise<{
+  successes: string[];
+  failures: { email: string; error: string }[];
+}> {
+  signOut();
+  const successes: string[] = [];
+  const failures: { email: string; error: string }[] = [];
+  for (const creds of list) {
+    const account: Account = {
+      creds,
+      accessToken: null,
+      refreshToken: creds.refreshToken,
+      expiresAt: 0,
+    };
+    try {
+      await refreshAccessToken(account);
+      session.accounts.push(account);
+      successes.push(creds.email);
+    } catch (e) {
+      failures.push({ email: creds.email, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  if (session.accounts.length > 0) session.activeIndex = 0;
+  emit();
+  return { successes, failures };
 }
 
 async function ensureToken(): Promise<string> {
