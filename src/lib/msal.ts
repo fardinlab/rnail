@@ -37,7 +37,6 @@ export async function getMsal(): Promise<PublicClientApplication> {
     },
     cache: {
       cacheLocation: "sessionStorage",
-      storeAuthStateInCookie: false,
     },
   };
 
