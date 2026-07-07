@@ -392,16 +392,20 @@ function MailboxPage() {
                 </div>
                 <ScrollArea className="flex-1">
                   <div className="px-6 py-5">
-                    {selected.body?.contentType === "text/html" ? (
-                      <div
-                        className="prose prose-sm max-w-none dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: selected.body.content }}
-                      />
-                    ) : (
-                      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                        {selected.body?.content ?? selected.bodyPreview}
-                      </pre>
-                    )}
+                    {(() => {
+                      const ct = (selected.body?.contentType ?? "").toLowerCase();
+                      const isHtml = ct === "html" || ct === "text/html" || /<[a-z][\s\S]*>/i.test(selected.body?.content ?? "");
+                      return isHtml ? (
+                        <div
+                          className="prose prose-sm max-w-none dark:prose-invert"
+                          dangerouslySetInnerHTML={{ __html: selected.body?.content ?? "" }}
+                        />
+                      ) : (
+                        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                          {selected.body?.content ?? selected.bodyPreview}
+                        </pre>
+                      );
+                    })()}
                   </div>
                 </ScrollArea>
               </>
