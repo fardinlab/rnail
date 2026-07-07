@@ -287,7 +287,7 @@ function MailboxPage() {
                 toast.success("Email copied", { description: session.email! });
               }}
               title={`Click to copy ${session.email}`}
-              className="hidden sm:flex items-center gap-1.5 max-w-[220px] h-9 px-3 rounded-md border border-border bg-background hover:bg-muted text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 min-w-0 max-w-[140px] sm:max-w-[220px] h-9 px-2 sm:px-3 rounded-md border border-border bg-background hover:bg-muted text-xs font-medium transition-colors"
             >
               <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span className="truncate">{session.email}</span>
