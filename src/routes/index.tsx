@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Loader2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,8 @@ import {
   enterGuestMode,
   parseCredentialsLines,
   signInMicrosoft,
+  restoreSession,
+  getSessionSnapshot,
 } from "@/lib/graph";
 import { isMsalConfigured } from "@/lib/msal";
 
@@ -23,6 +25,12 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [msalLoading, setMsalLoading] = useState(false);
   const msalReady = isMsalConfigured();
+
+  // Restore a previously connected session on reload.
+  useEffect(() => {
+    restoreSession();
+    if (getSessionSnapshot().connected) navigate({ to: "/mailbox" });
+  }, [navigate]);
 
   const handleConnect = async () => {
     setLoading(true);

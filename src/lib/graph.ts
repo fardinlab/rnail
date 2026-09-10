@@ -67,7 +67,72 @@ const session: Session = {
 };
 
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
+
+// --- Persistence (survives page reloads until explicit sign out) -------------
+const STORAGE_KEY = "mailbox.session.v1";
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try {
+    if (session.accounts.length === 0 && !session.guest && !session.msal) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        accounts: session.accounts.map((a) => ({
+          creds: a.creds,
+          refreshToken: a.refreshToken,
+        })),
+        activeIndex: session.activeIndex,
+        guest: session.guest,
+        msal: session.msal,
+        msalEmail: session.msalEmail,
+      }),
+    );
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+let restored = false;
+export function restoreSession() {
+  if (restored || typeof window === "undefined") return;
+  restored = true;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw) as {
+      accounts?: { creds: Credentials; refreshToken: string }[];
+      activeIndex?: number;
+      guest?: boolean;
+      msal?: boolean;
+      msalEmail?: string | null;
+    };
+    session.accounts = (saved.accounts ?? []).map((a) => ({
+      creds: a.creds,
+      accessToken: null,
+      refreshToken: a.refreshToken || a.creds.refreshToken,
+      expiresAt: 0,
+    }));
+    session.activeIndex =
+      session.accounts.length > 0
+        ? Math.min(Math.max(saved.activeIndex ?? 0, 0), session.accounts.length - 1)
+        : -1;
+    session.guest = !!saved.guest;
+    session.msal = !!saved.msal;
+    session.msalEmail = saved.msalEmail ?? null;
+    emit();
+  } catch {
+    /* ignore corrupt state */
+  }
+}
+
+const emit = () => {
+  persist();
+  listeners.forEach((l) => l());
+};
 
 export function subscribeSession(l: () => void) {
   listeners.add(l);
@@ -168,6 +233,7 @@ async function refreshAccessToken(account: Account): Promise<string> {
   account.accessToken = data.access_token;
   if (data.refresh_token) account.refreshToken = data.refresh_token;
   account.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  persist();
   return data.access_token;
 }
 
