@@ -314,10 +314,13 @@ export async function listMessages(
   }
   if (opts.search) params.set("$search", `"${opts.search.replace(/"/g, "'")}"`);
 
-  const graphFolder = FOLDER_TO_GRAPH[folder];
-  const data = await graphFetch<{ value: GraphMessage[] }>(
-    `/me/mailFolders/${graphFolder}/messages?${params.toString()}`,
-  );
+  // For inbox, query all messages (covers Focused/Other/Junk) so OTP mails
+  // routed to Junk still appear.
+  const path =
+    folder === "inbox" || folder === "starred"
+      ? `/me/messages?${params.toString()}`
+      : `/me/mailFolders/${FOLDER_TO_GRAPH[folder]}/messages?${params.toString()}`;
+  const data = await graphFetch<{ value: GraphMessage[] }>(path);
   return data.value;
 }
 
