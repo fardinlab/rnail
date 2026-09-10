@@ -26,6 +26,12 @@ function LoginPage() {
   const [msalLoading, setMsalLoading] = useState(false);
   const msalReady = isMsalConfigured();
 
+  // Restore a previously connected session on reload.
+  useEffect(() => {
+    restoreSession();
+    if (getSessionSnapshot().connected) navigate({ to: "/mailbox" });
+  }, [navigate]);
+
   const handleConnect = async () => {
     setLoading(true);
     try {
