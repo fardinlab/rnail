@@ -10,6 +10,8 @@ import {
   enterGuestMode,
   parseCredentialsLines,
   signInMicrosoft,
+  restoreSession,
+  getSessionSnapshot,
 } from "@/lib/graph";
 import { isMsalConfigured } from "@/lib/msal";
 
