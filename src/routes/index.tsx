@@ -124,7 +124,7 @@ function LoginPage() {
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Connect"}
           </Button>
-          <Button variant="ghost" onClick={handleGuest} className="h-11" size="lg">
+          <Button variant="destructive" onClick={handleGuest} className="h-11" size="lg">
             <UserRound className="h-4 w-4 mr-2" />
             Continue as guest
           </Button>
