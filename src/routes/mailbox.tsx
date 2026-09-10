@@ -30,6 +30,7 @@ import {
   getSessionSnapshot,
   listMessages,
   removeAccount,
+  restoreSession,
   signOut,
   subscribeSession,
   switchAccount,
