@@ -233,6 +233,7 @@ async function refreshAccessToken(account: Account): Promise<string> {
   account.accessToken = data.access_token;
   if (data.refresh_token) account.refreshToken = data.refresh_token;
   account.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  persist();
   return data.access_token;
 }
 
