@@ -82,9 +82,15 @@ function MailboxPage() {
   const [loading, setLoading] = useState(false);
   const [newestFirst, setNewestFirst] = useState(true);
 
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    if (!session.connected) navigate({ to: "/" });
-  }, [session.connected, navigate]);
+    restoreSession();
+    setRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (restored && !session.connected) navigate({ to: "/" });
+  }, [restored, session.connected, navigate]);
 
   const load = useCallback(async () => {
     setLoading(true);
