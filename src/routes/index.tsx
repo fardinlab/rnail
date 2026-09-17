@@ -16,6 +16,22 @@ import {
 import { isMsalConfigured } from "@/lib/msal";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Connect | Mailbox" },
+      {
+        name: "description",
+        content: "Connect Outlook accounts securely and read verification emails in one mailbox.",
+      },
+      { property: "og:title", content: "Connect | Mailbox" },
+      {
+        property: "og:description",
+        content: "Connect Outlook accounts and read verification emails in one mailbox.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: LoginPage,
 });
 

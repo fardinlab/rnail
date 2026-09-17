@@ -289,7 +289,8 @@ async function ensureToken(): Promise<string> {
   if (!account.accessToken || Date.now() >= account.expiresAt) {
     await refreshAccessToken(account);
   }
-  return account.accessToken!;
+  if (!account.accessToken) throw new Error("Microsoft access token was not returned.");
+  return account.accessToken;
 }
 
 
@@ -370,7 +371,7 @@ export async function listMessages(
     return list;
   }
 
-  const top = opts.top ?? 50;
+  const top = opts.top ?? 100;
   const buildParams = (withFilter?: string) => {
     const p = new URLSearchParams({
       $top: String(top),
@@ -382,27 +383,17 @@ export async function listMessages(
     return p.toString();
   };
 
-  // Inbox view merges Inbox + Junk so OTP mail routed to Junk still shows up.
+  // The Inbox view intentionally reads the whole mailbox. Some verification
+  // emails are delivered to folders other than Inbox/Junk by Outlook rules.
   if (folder === "inbox") {
-    const [inboxRes, junkRes] = await Promise.all([
-      graphFetch<{ value: GraphMessage[] }>(
-        `/me/mailFolders/inbox/messages?${buildParams()}`,
-      ).catch(() => ({ value: [] as GraphMessage[] })),
-      graphFetch<{ value: GraphMessage[] }>(
-        `/me/mailFolders/junkemail/messages?${buildParams()}`,
-      ).catch(() => ({ value: [] as GraphMessage[] })),
-    ]);
-    const seen = new Set<string>();
-    const merged = [...inboxRes.value, ...junkRes.value].filter((m) => {
-      if (seen.has(m.id)) return false;
-      seen.add(m.id);
-      return true;
-    });
-    merged.sort(
+    const data = await graphFetch<{ value: GraphMessage[] }>(
+      `/me/messages?${buildParams()}`,
+    );
+    data.value.sort(
       (a, b) =>
         new Date(b.receivedDateTime).getTime() - new Date(a.receivedDateTime).getTime(),
     );
-    return merged;
+    return data.value;
   }
 
   if (folder === "starred") {
