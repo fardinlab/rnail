@@ -128,11 +128,11 @@ function MailboxPage() {
     void load();
   }, [load]);
 
-  // Auto-refresh every 10s
+  // Auto-refresh every 3s
   useEffect(() => {
     const id = window.setInterval(() => {
       void load();
-    }, 10_000);
+    }, 3_000);
     return () => window.clearInterval(id);
   }, [load]);
 
