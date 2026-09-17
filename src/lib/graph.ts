@@ -370,23 +370,51 @@ export async function listMessages(
     return list;
   }
 
-  const params = new URLSearchParams({
-    $top: String(opts.top ?? 25),
-    $orderby: "receivedDateTime desc",
-    $select: "id,subject,bodyPreview,from,receivedDateTime,isRead,flag",
-  });
-  if (folder === "starred") {
-    params.set("$filter", "flag/flagStatus eq 'flagged'");
-  }
-  if (opts.search) params.set("$search", `"${opts.search.replace(/"/g, "'")}"`);
+  const top = opts.top ?? 50;
+  const buildParams = (withFilter?: string) => {
+    const p = new URLSearchParams({
+      $top: String(top),
+      $orderby: "receivedDateTime desc",
+      $select: "id,subject,bodyPreview,from,receivedDateTime,isRead,flag",
+    });
+    if (withFilter) p.set("$filter", withFilter);
+    if (opts.search) p.set("$search", `"${opts.search.replace(/"/g, "'")}"`);
+    return p.toString();
+  };
 
-  // For inbox, query all messages (covers Focused/Other/Junk) so OTP mails
-  // routed to Junk still appear.
-  const path =
-    folder === "inbox" || folder === "starred"
-      ? `/me/messages?${params.toString()}`
-      : `/me/mailFolders/${FOLDER_TO_GRAPH[folder]}/messages?${params.toString()}`;
-  const data = await graphFetch<{ value: GraphMessage[] }>(path);
+  // Inbox view merges Inbox + Junk so OTP mail routed to Junk still shows up.
+  if (folder === "inbox") {
+    const [inboxRes, junkRes] = await Promise.all([
+      graphFetch<{ value: GraphMessage[] }>(
+        `/me/mailFolders/inbox/messages?${buildParams()}`,
+      ).catch(() => ({ value: [] as GraphMessage[] })),
+      graphFetch<{ value: GraphMessage[] }>(
+        `/me/mailFolders/junkemail/messages?${buildParams()}`,
+      ).catch(() => ({ value: [] as GraphMessage[] })),
+    ]);
+    const seen = new Set<string>();
+    const merged = [...inboxRes.value, ...junkRes.value].filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+    merged.sort(
+      (a, b) =>
+        new Date(b.receivedDateTime).getTime() - new Date(a.receivedDateTime).getTime(),
+    );
+    return merged;
+  }
+
+  if (folder === "starred") {
+    const data = await graphFetch<{ value: GraphMessage[] }>(
+      `/me/messages?${buildParams("flag/flagStatus eq 'flagged'")}`,
+    );
+    return data.value;
+  }
+
+  const data = await graphFetch<{ value: GraphMessage[] }>(
+    `/me/mailFolders/${FOLDER_TO_GRAPH[folder]}/messages?${buildParams()}`,
+  );
   return data.value;
 }
 
