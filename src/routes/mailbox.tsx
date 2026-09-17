@@ -39,6 +39,22 @@ import {
 } from "@/lib/graph";
 
 export const Route = createFileRoute("/mailbox")({
+  head: () => ({
+    meta: [
+      { title: "Inbox | Mailbox" },
+      {
+        name: "description",
+        content: "Read Outlook messages and quickly copy verification codes.",
+      },
+      { property: "og:title", content: "Inbox | Mailbox" },
+      {
+        property: "og:description",
+        content: "Read Outlook messages and quickly copy verification codes.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: MailboxPage,
 });
 
